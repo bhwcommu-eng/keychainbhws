@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>พวงกุญแจน่ารักแบบลากวาง</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: 'Baloo 2', cursive;
+  background: #fff0f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 20px;
+}
+h1 { color: #ff69b4; margin-bottom: 20px; text-shadow: 1px 1px 2px #ffc0cb; }
+.container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+.menu-section { display: flex; flex-direction: column; gap: 10px; min-width: 180px; }
+.folder { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 12px; border: 2px solid #ff69b4; border-radius: 12px; background: #ffe4f2; transition: background 0.2s, transform 0.1s; }
+.folder:hover { background: #ffd6e8; transform: translateY(-2px); }
+.folder-content { display: none; margin-left: 12px; flex-wrap: wrap; gap: 10px; }
+.folder-content img { width: 60px; height: 60px; cursor: pointer; border: 2px solid transparent; border-radius: 8px; transition: transform 0.2s, border-color 0.2s; }
+.folder-content img:hover { transform: scale(1.1); }
+.folder-content img.selected { border-color: #ff69b4; }
+#canvas-container { background: #fff8f0; border: 2px dashed #ff69b4; border-radius: 12px; padding: 10px; position: relative; }
+canvas { background: #fff8f0; cursor: grab; border-radius: 8px; }
+button { margin-top: 15px; padding: 8px 16px; border: none; background-color: #ff69b4; color: white; border-radius: 12px; cursor: pointer; font-size: 16px; transition: background 0.2s; }
+button:hover { background-color: #ff85c1; }
+</style>
+</head>
+<body>
+
+<h1>สร้างพวงกุญแจของคุณ</h1>
+
+<div class="container">
+  <div class="menu-section">
+    <div class="folder" data-folder="loop">📁 ห่วง</div>
+    <div class="folder-content" id="loop">
+      <img src="images/loop1.png" alt="loop1">
+      <img src="images/loop2.png" alt="loop2">
+      <img src="images/loop3.png" alt="loop3">
+    </div>
+
+    <div class="folder" data-folder="rope">📁 เชือก</div>
+    <div class="folder-content" id="rope">
+      <img src="images/rope1.png" alt="rope1">
+      <img src="images/rope2.png" alt="rope2">
+      <img src="images/rope3.png" alt="rope3">
+    </div>
+
+    <div class="folder" data-folder="char">📁 ตัวอักษร</div>
+    <div class="folder-content" id="char">
+      <img src="images/char_a.png" alt="char_a">
+      <img src="images/char_b.png" alt="char_b">
+    </div>
+
+    <div class="folder" data-folder="bead">📁 ลูกปัดน่ารัก</div>
+    <div class="folder-content" id="bead">
+      <img src="images/bead1.png" alt="bead1">
+      <img src="images/bead2.png" alt="bead2">
+    </div>
+
+    <div class="folder" data-folder="lock">📁 ตัวล็อก</div>
+    <div class="folder-content" id="lock">
+      <img src="images/lock1.png" alt="lock1">
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="canvas" width="400" height="500"></canvas>
+    <button id="download">ดาวน์โหลดภาพ</button>
+  </div>
+</div>
+
+<audio id="click-sound" src="sounds/click.mp3"></audio>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let dragImage = null;
+let isDragging = false;
+let offsetX = 30, offsetY = 30;
+const placedImages = [];
+const clickSound = document.getElementById("click-sound");
+
+// เปิด/ปิดโฟลเดอร์
+document.querySelectorAll(".folder").forEach(folder => {
+  folder.addEventListener("click", () => {
+    const id = folder.dataset.folder;
+    const content = document.getElementById(id);
+    content.style.display = content.style.display === "flex" ? "none" : "flex";
+  });
+});
+
+// เลือกภาพจากโฟลเดอร์
+document.querySelectorAll(".folder-content img").forEach(img => {
+  img.addEventListener("click", () => {
+    clickSound.play();
+    dragImage = new Image();
+    dragImage.src = img.src;
+    dragImage.onload = () => { isDragging = true; };
+    dragImage.onerror = () => { alert("โหลดภาพไม่สำเร็จ: " + img.src); dragImage = null; };
+    img.parentElement.querySelectorAll("img").forEach(i => i.classList.remove("selected"));
+    img.classList.add("selected");
+  });
+});
+
+// วาดภาพตามเมาส์
+canvas.addEventListener("mousemove", e => {
+  if (!isDragging || !dragImage) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left - offsetX;
+  const y = e.clientY - rect.top - offsetY;
+  redrawCanvas();
+  ctx.drawImage(dragImage, x, y, 60, 60);
+});
+
+// วางภาพ
+canvas.addEventListener("mouseup", e => {
+  if (!isDragging || !dragImage) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left - offsetX;
+  const y = e.clientY - rect.top - offsetY;
+  placedImages.push({img: dragImage, x, y, width: 60, height: 60});
+  dragImage = null;
+  isDragging = false;
+  redrawCanvas();
+});
+
+// วาดภาพทั้งหมด
+function redrawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  placedImages.forEach(p => ctx.drawImage(p.img, p.x, p.y, p.width, p.height));
+}
+
+// ดาวน์โหลดภาพ
+document.getElementById("download").addEventListener("click", () => {
+  const link = document.createElement("a");
+  link.download = "keychain.png";
+  link.href = canvas.toDataURL();
+  link.click();
+});
+</script>
+
+</body>
+</html>
